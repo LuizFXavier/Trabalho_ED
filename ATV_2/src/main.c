@@ -1,31 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "jsense.h"
+#include "cidade.h"
+#include "kd-tree.h"
 #include "hash.h"
 
-typedef struct{
-    char* codigo_ibge;
-    char * nome;
-    double latitude;
-    double longitude;
-    int capital;
-    int codigo_uf;
-    int siafi_id;
-    int ddd;
-    char * fuso_horario;
-}municipio;
+double comparador(const void* c1, const void* c2, int k){
+
+    switch (k)
+    {
+    case 0:
+        return ((cidade*)c1)->longitude - ((cidade*)c2)->longitude;
+        break;
+    
+    case 1:
+        return ((cidade*)c1)->latitude - ((cidade*)c2)->latitude;
+        break;
+
+    default:
+        printf("Dimensão inválida no comparador");
+        break;
+    }
+
+}
+
+void inOrdem(t_no* atual){
+
+    if(!atual){
+        return;
+    }
+
+    if(atual->esq){
+        inOrdem(atual->esq);
+    }
+
+    if(atual->dir){
+        inOrdem(atual->dir);
+    }
+    printf("%.1lf, %.1lf\n", atual->reg->latitude, atual->reg->longitude);
+}
 
 char* get_key(const void* mun){
 
-    municipio* m = (municipio*)mun;
+    cidade* m = (cidade*)mun;
 
     return m->codigo_ibge;
 }
 
 int main(){
 
-    t_hash * h = criaHash(100 * 200, get_key);
-
+    t_arvore *arv = cria_arvore(2, comparador);
+    t_hash *hash = criaHash(100 * 100, get_key);
+    
     char itens[9][18];
 
     JSENSE *j = jse_from_file("test/municipios.json");
@@ -34,7 +60,7 @@ int main(){
 
     for(int i = 0; i < 5570; i++){ // Leitura do JSON
     
-        municipio* m = malloc(sizeof(municipio));
+        cidade* m = malloc(sizeof(cidade));
 
         sprintf(itens[0], "[%d].codigo_ibge",i);
         sprintf(itens[1], "[%d].nome",i);
@@ -59,35 +85,35 @@ int main(){
         m->ddd = tec_string_to_int(jse_get(j, itens[7]));
         m->fuso_horario = jse_get(j, itens[8]);
         
-        insereHash(h, m);
+        insereHash(hash, m);
+        kd_insere(arv, m);
     }
 
     free(j);
-    
+
+    int p = 0;
+
     char cod[8];
     printf("Insira o código IBGE desejado: ");
     scanf("%s",cod);
 
-    municipio* jk = (municipio*)buscaHash(h, cod);
+    int n;
+    printf("insira o número de cidades desejado: ");
+    scanf("%d", &n);
 
-    if(!jk){
-        printf("Cidade não encontrada!\n");
-    }
-    else{
-        printf("\nCódigo IBGE: %s\n", jk->codigo_ibge);
-        printf("Nome: %s\n", jk->nome);
-        printf("Código UF: %d\n", jk->codigo_uf);
-        printf("DDD: %d\n", jk->ddd);
-        printf("Capital: %d\n", jk->capital);
-        printf("Latitude: %lf\n", jk->latitude);
-        printf("Longitude: %lf\n", jk->longitude);
-        printf("Siafi ID: %d\n", jk->siafi_id);
-        printf("Fuso horário: %s\n", jk->fuso_horario);
+    cidade* c = (cidade*)buscaHash(hash, cod);
 
+    cidade** cities = maisProximas(arv, c, n);
+
+
+    while ((*cities) != NULL)
+    {
+        printf("%s\n", (*cities)->codigo_ibge);
+        cities++;
     }
 
+    apagaHash(hash);
 
-    apagaHash(h);
-
-    return 0;
+    return EXIT_SUCCESS;
 }
+
