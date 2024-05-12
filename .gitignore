@@ -3,5 +3,6 @@ cmake_install.cmake
 CMakeFiles
 Makefile
 .vscode
+ATV_1/atv_1
 ATV_2/atv_2
 ATV_3/atv_3
