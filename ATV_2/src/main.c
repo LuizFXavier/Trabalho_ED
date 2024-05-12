@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "jsense.h"
 #include "cidade.h"
 #include "kd-tree.h"
@@ -113,6 +114,7 @@ int main(){
     }
 
     apagaHash(hash);
+    KD_destroi(arv);
 
     return EXIT_SUCCESS;
 }
